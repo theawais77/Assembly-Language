@@ -1,0 +1,169 @@
+.model small
+.stack 100h
+
+.data
+    prompt db 'Enter 4 numbers (0-9): $'
+    num_prompt db 'Enter number $'
+    colon_space db ': $'
+    newline db 10,13,'$'
+    
+    numbers db 4 dup(?)    ; Array to store 4 numbers
+    sum db ?
+    mean db ?
+    min db ?
+    max db ?
+    
+    sum_msg db 'Sum: $'
+    mean_msg db 'Mean: $'
+    min_msg db 'Min: $'
+    max_msg db 'Max: $'
+
+.code
+main proc
+    ; Initialize data segment
+    mov ax, @data
+    mov ds, ax
+
+    ; Display initial prompt
+    mov ah, 09h
+    mov dx, offset prompt
+    int 21h
+    
+    ; Print newline
+    mov dx, offset newline
+    int 21h
+
+    ; Read 4 numbers from user
+    mov cx, 4             ; Loop counter
+    mov si, offset numbers ; Pointer to array
+    
+input_loop:
+    ; Display number prompt
+    mov ah, 09h
+    mov dx, offset num_prompt
+    int 21h
+    
+    ; Display current number position (1-4)
+    mov ah, 02h
+    mov dl, '1'           ; Start with '1'
+    add dl, 4             ; Calculate current position
+    sub dl, cl            ; (1 + 4 - CX)
+    int 21h
+    
+    ; Display ": "
+    mov ah, 09h
+    mov dx, offset colon_space
+    int 21h
+    
+    ; Read single digit (0-9)
+    mov ah, 01h
+    int 21h
+    sub al, '0'           ; Convert ASCII to number
+    mov [si], al          ; Store in array
+    
+    ; Print newline
+    mov ah, 09h
+    mov dx, offset newline
+    int 21h
+    
+    inc si                ; Move to next array position
+    loop input_loop       ; Repeat until CX=0
+
+    ; ----------------------------
+    ; CALCULATIONS BEGIN HERE
+    ; ----------------------------
+
+    ; Initialize calculations
+    mov si, offset numbers
+    mov cx, 4
+    
+    ; Initialize sum to 0
+    mov sum, 0
+    
+    ; Initialize min/max with first number
+    mov al, [si]
+    mov min, al
+    mov max, al
+
+calc_loop:
+    ; Add to sum
+    mov al, [si]
+    add sum, al
+    
+    ; Check for minimum
+    cmp al, min
+    jae not_min
+    mov min, al
+not_min:
+    
+    ; Check for maximum
+    cmp al, max
+    jbe not_max
+    mov max, al
+not_max:
+    
+    inc si                ; Next array element
+    loop calc_loop        ; Repeat for all numbers
+
+    ; Calculate mean (sum/4)
+    mov al, sum
+    mov ah, 0             ; Clear AH for division
+    mov bl, 4
+    div bl                ; AL = AX / 4 (quotient)
+    mov mean, al          ; Store mean (integer division)
+
+    ; ----------------------------
+    ; DISPLAY RESULTS
+    ; ----------------------------
+
+    ; Print newline before results
+    mov ah, 09h
+    mov dx, offset newline
+    int 21h
+
+    ; Display sum
+    mov dx, offset sum_msg
+    int 21h
+    mov dl, sum
+    add dl, '0'           ; Convert to ASCII
+    mov ah, 02h
+    int 21h
+    mov dx, offset newline
+    mov ah, 09h
+    int 21h
+
+    ; Display mean
+    mov dx, offset mean_msg
+    int 21h
+    mov dl, mean
+    add dl, '0'
+    mov ah, 02h
+    int 21h
+    mov dx, offset newline
+    mov ah, 09h
+    int 21h
+
+    ; Display min
+    mov dx, offset min_msg
+    int 21h
+    mov dl, min
+    add dl, '0'
+    mov ah, 02h
+    int 21h
+    mov dx, offset newline
+    mov ah, 09h
+    int 21h
+
+    ; Display max
+    mov dx, offset max_msg
+    int 21h
+    mov dl, max
+    add dl, '0'
+    mov ah, 02h
+    int 21h
+
+    ; Exit program
+    mov ah, 4ch
+    int 21h
+main endp
+end main
